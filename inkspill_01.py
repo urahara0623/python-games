@@ -20,9 +20,9 @@ block_colors = (param.RED, param.GREEN, param.BLUE, param.YELLOW, param.ORANGE, 
 
 # There are different box sizes, number of boxes, and
 # life depending on the "board size" setting selected.
-SMALLBOXSIZE  = 60 # size is in pixels
+SMALLBOXSIZE  = 40 # size is in pixels
 MEDIUMBOXSIZE = 20
-LARGEBOXSIZE  = 11
+LARGEBOXSIZE  = 10
 
 SMALLBOARDSIZE  = 6 # size is in boxes
 MEDIUMBOARDSIZE = 17
@@ -46,6 +46,22 @@ difficulty = MEDIUM # game starts in "medium" mode
 maxLife = MEDIUMMAXLIFE
 boardWidth = MEDIUMBOARDSIZE
 boardHeight = MEDIUMBOARDSIZE
+
+# タイルサイズの定義
+TILE_SIZE_L = 1
+TILE_SIZE_M = 2
+TILE_SIZE_S = 4
+
+# MCを定義
+MC_X0 = 0
+MC_Y0 = 120
+MC_Z0 = 0
+
+def draw_block_mc(x, y, boxSize, board):
+    boxSize = int(boxSize / 10)
+    for i in range(boxSize):
+        for j in range(boxSize):
+            mc.setBlock(MC_X0 + x * boxSize + i, MC_Y0 - y * boxSize - j, MC_Z0, block_colors[board[x][y]])
 
 
 #            R    G    B
@@ -372,6 +388,16 @@ def drawLogoAndButtons():
     DISPLAYSURF.blit(RESETBUTTONIMAGE, (WINDOWWIDTH - RESETBUTTONIMAGE.get_width(), WINDOWHEIGHT - SETTINGSBUTTONIMAGE.get_height() - RESETBUTTONIMAGE.get_height()))
 
 
+# ボードを描く前に指定した空間を空気ブロックでクリアする関数
+def clear_area(board_size, tile_size):
+    width = board_size * tile_size
+    height = board_size * tile_size
+    depth = 1  # 1ブロックの厚さのみ
+    for x in range(MC_X0, MC_X0 + width):
+        for y in range(MC_Y0 - height, MC_Y0):
+            for z in range(MC_Z0, MC_Z0 + depth):
+                mc.setBlock(x, y, z, "air")
+
 def drawBoard(board, transparency=255):
     # The colored squares are drawn to a temporary surface which is then
     # drawn to the DISPLAYSURF surface. This is done so we can draw the
@@ -402,10 +428,6 @@ def drawPalettes():
         pygame.draw.rect(DISPLAYSURF, paletteColors[i], (left, top, PALETTESIZE, PALETTESIZE))
         pygame.draw.rect(DISPLAYSURF, bgColor,   (left + 2, top + 2, PALETTESIZE - 4, PALETTESIZE - 4), 2)
 
-
-
-from mcpi.minecraft import Minecraft
-
 # Initialize Minecraft connection
 def drawLifeMeter(currentLife):
     lifeBoxSize = int((WINDOWHEIGHT - 40) / maxLife)
@@ -414,14 +436,15 @@ def drawLifeMeter(currentLife):
     pygame.draw.rect(DISPLAYSURF, bgColor, (20, 20, 20, 20 + (maxLife * lifeBoxSize)))
 
     # Define Minecraft coordinates
-    mc_x = -10
-    mc_y = 120
-    mc_z = 20
+    board_mc_x = -4
+    board_mc_y = 120
+    board_mc_z = 20
 
     for i in range(maxLife):
         if currentLife >= (maxLife - i):  # draw a solid red box
             pygame.draw.rect(DISPLAYSURF, RED, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize))
-            mc.setBlock(mc_x, mc_y - i, mc_z, RED)  # Display red wool block in Minecraft
+            mc.setBlock(board_mc_x, board_mc_y - i, board_mc_z, block_colors, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize))  # Display red wool block in Minecraft
+        pygame.draw.rect(DISPLAYSURF, WHITE, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize), 1) # draw white outline
 
 # Initialize Pygame and other necessary components here...
 # ...

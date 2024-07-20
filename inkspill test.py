@@ -8,9 +8,9 @@ from pygame.locals import *
 
 # There are different box sizes, number of boxes, and
 # life depending on the "board size" setting selected.
-SMALLBOXSIZE  = 60 # size is in pixels
+SMALLBOXSIZE  = 40 # size is in pixels
 MEDIUMBOXSIZE = 20
-LARGEBOXSIZE  = 11
+LARGEBOXSIZE  = 10
 
 SMALLBOARDSIZE  = 6 # size is in boxes
 MEDIUMBOARDSIZE = 17
@@ -399,7 +399,56 @@ def drawLifeMeter(currentLife):
         if currentLife >= (maxLife - i): # draw a solid red box
             pygame.draw.rect(DISPLAYSURF, RED, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize))
         pygame.draw.rect(DISPLAYSURF, WHITE, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize), 1) # draw white outline
+    
+    for i in range(maxLife):
+        if currentLife >= (maxLife - i): # draw a solid red box
+            pygame.draw.rect(DISPLAYSURF, BLUE, (110, 20 + (i * lifeBoxSize), 20, lifeBoxSize))
+        pygame.draw.rect(DISPLAYSURF, WHITE, (110, 20 + (i * lifeBoxSize), 20, lifeBoxSize), 1) # draw white outline
 
+def hasWon(board):
+    # if the entire board is the same color, player has won
+    for x in range(boardWidth):
+        for y in range(boardHeight):
+            if board[x][y] != board[0][0]:
+                return False  # found a different color, player has not won
+    return True
+
+def floodFill(board, oldColor, newColor, x, y):
+    # 前の色が新しい色と同じ、あるいは、指定されたタイルの色が古い色でない場合、何もしない。
+    # 指定されたタイルを新しい色で塗る。
+    # （つまり、前の色の地続きを新しい色で塗り拡げる、ということ。）
+
+    # 上下左右のタイルについて、それぞれfoodFill()を呼び出す。
+    if x < 0 or x >= boardWidth or y < 0 or y >= boardHeight:
+        return
+
+    if oldColor == newColor or board[x][y] != oldColor:
+        return
+    board[x][y] = newColor  # change the color of the current box
+
+    # Make the recursive call for any neighboring boxes:
+    floodFill(board, oldColor, newColor, x - 1, y)  # on box to the left
+    floodFill(board, oldColor, newColor, x + 1, y)  # on box to the right
+    floodFill(board, oldColor, newColor, x, y - 1)  # on box to up
+    floodFill(board, oldColor, newColor, x, y + 1)  # on box to down
+    return
+
+def floodFill(board, oldColor, newColor, x, y):
+    if x < 0 or x >= boardWidth or y < 0 or y >= boardHeight:
+        return 0
+
+    if oldColor == newColor or board[x][y] != oldColor:
+        return 0
+    board[x][y] = newColor  # change the color of the current box
+    count = 1
+
+    # Make the recursive call for any neighboring boxes:
+    count += floodFill(board, oldColor, newColor, x - 1, y)  # on box to the left
+    count += floodFill(board, oldColor, newColor, x + 1, y)  # on box to the right
+    count += floodFill(board, oldColor, newColor, x, y - 1)  # on box to up
+    count += floodFill(board, oldColor, newColor, x, y + 1)  # on box to down
+
+    return count
 
 def getColorOfPaletteAt(x, y):
     # Returns the index of the color in paletteColors that the x and y parameters
