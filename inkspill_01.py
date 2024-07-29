@@ -111,7 +111,10 @@ def main():
     while True: # main game loop
         paletteClicked = None
         resetGame = False
-
+        # パレットがクリックされたときの処理
+        #paletteClicked = get_palette_color(event.pos)  # クリックされたパレットの色を取得する関数
+        # アニメーションを実行
+        floodAnimation(mainBoard, paletteClicked)
         # Draw the screen.
         DISPLAYSURF.fill(bgColor)
         drawLogoAndButtons()
@@ -417,6 +420,11 @@ def drawBoard(board, transparency=255):
     mc.setBlock(x, 120 - y, 20, block_colors[board[x][y]])
     DISPLAYSURF.blit(tempSurf, (0, 0))
 
+    #floodFill(board, board[0][0], paletteClicked, 0, 0)
+    #board_for_count = copy.deepcopy(board)
+    #achievement = floodFill(board_for_count, paletteClicked, -1, 0, 0)
+    #print(achievement, achievement / (boardWidth * boardHeight) * 100, '%')
+
 
 def drawPalettes():
     # Draws the six color palettes at the bottom of the screen.
@@ -464,24 +472,25 @@ def getColorOfPaletteAt(x, y):
             return i
     return None # no palette exists at these x, y coordinates
 
-
 def floodFill(board, oldColor, newColor, x, y):
-    # This is the flood fill algorithm.
-    if oldColor == newColor or board[x][y] != oldColor:
+    if x < 0 or x >= boardWidth or y < 0 or y >= boardHeight:
         return
 
-    board[x][y] = newColor # change the color of the current box
+    if oldColor == newColor or board[x][y] != oldColor:
+        return
+    board[x][y] = newColor  # change the color of the current box
 
     # Make the recursive call for any neighboring boxes:
-    if x > 0:
-        floodFill(board, oldColor, newColor, x - 1, y) # on box to the left
-    if x < boardWidth - 1:
-        floodFill(board, oldColor, newColor, x + 1, y) # on box to the right
-    if y > 0:
-        floodFill(board, oldColor, newColor, x, y - 1) # on box to up
-    if y < boardHeight - 1:
-        floodFill(board, oldColor, newColor, x, y + 1) # on box to down
+    floodFill(board, oldColor, newColor, x - 1, y)  # on box to the left
+    floodFill(board, oldColor, newColor, x + 1, y)  # on box to the right
+    floodFill(board, oldColor, newColor, x, y - 1)  # on box to up
+    floodFill(board, oldColor, newColor, x, y + 1)  # on box to down
 
+    #floodFill(board, board[0][0], paletteClicked, 0, 0)
+    #board_for_count = copy.deepcopy(board)
+    #achievement = floodFill(board_for_count, paletteClicked, -1, 0, 0)
+    #print(achievement, achievement / (boardWidth * boardHeight) * 100, '%')
+    return
 
 def leftTopPixelCoordOfBox(boxx, boxy):
     # Returns the x and y of the left-topmost pixel of the xth & yth box.
