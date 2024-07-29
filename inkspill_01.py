@@ -328,6 +328,11 @@ def floodAnimation(board, paletteClicked, animationSpeed=25):
     origBoard = copy.deepcopy(board)
     floodFill(board, board[0][0], paletteClicked, 0, 0)
 
+    #board_for_count = copy.deepcopy(board)
+    #achievement = floodFill(board_for_count, paletteClicked, -1, 0, 0)
+    #print(achievement, achievement / (boardWidth * boardHeight) * 100, '%')
+    #sys.setrecursionlimit(1100)
+    
     for transparency in range(0, 255, animationSpeed):
         # The "new" board slowly become opaque over the original board.
         drawBoard(origBoard)
@@ -412,6 +417,10 @@ def drawBoard(board, transparency=255):
         for y in range(boardHeight):
             left, top = leftTopPixelCoordOfBox(x, y)
             r, g, b = paletteColors[board[x][y]]
+            #if board[x][y] is not None:
+                #r, g, b = paletteColors[board[x][y]]
+            #else:
+                #r, g, b = (0, 0, 0)
             pygame.draw.rect(tempSurf, (r, g, b, transparency), (left, top, boxSize, boxSize))
             mc.setBlock(x, 120 - y, 20, block_colors[board[x][y]])    
     left, top = leftTopPixelCoordOfBox(0, 0)
@@ -420,10 +429,6 @@ def drawBoard(board, transparency=255):
     mc.setBlock(x, 120 - y, 20, block_colors[board[x][y]])
     DISPLAYSURF.blit(tempSurf, (0, 0))
 
-    #floodFill(board, board[0][0], paletteClicked, 0, 0)
-    #board_for_count = copy.deepcopy(board)
-    #achievement = floodFill(board_for_count, paletteClicked, -1, 0, 0)
-    #print(achievement, achievement / (boardWidth * boardHeight) * 100, '%')
 
 
 def drawPalettes():
@@ -485,11 +490,6 @@ def floodFill(board, oldColor, newColor, x, y):
     floodFill(board, oldColor, newColor, x + 1, y)  # on box to the right
     floodFill(board, oldColor, newColor, x, y - 1)  # on box to up
     floodFill(board, oldColor, newColor, x, y + 1)  # on box to down
-
-    #floodFill(board, board[0][0], paletteClicked, 0, 0)
-    #board_for_count = copy.deepcopy(board)
-    #achievement = floodFill(board_for_count, paletteClicked, -1, 0, 0)
-    #print(achievement, achievement / (boardWidth * boardHeight) * 100, '%')
     return
 
 def leftTopPixelCoordOfBox(boxx, boxy):
