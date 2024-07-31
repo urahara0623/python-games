@@ -114,7 +114,7 @@ def main():
         # パレットがクリックされたときの処理
         #paletteClicked = get_palette_color(event.pos)  # クリックされたパレットの色を取得する関数
         # アニメーションを実行
-        floodAnimation(mainBoard, paletteClicked)
+        # floodAnimation(mainBoard, paletteClicked)
         # Draw the screen.
         DISPLAYSURF.fill(bgColor)
         drawLogoAndButtons()
@@ -422,11 +422,11 @@ def drawBoard(board, transparency=255):
             #else:
                 #r, g, b = (0, 0, 0)
             pygame.draw.rect(tempSurf, (r, g, b, transparency), (left, top, boxSize, boxSize))
-            mc.setBlock(x, 120 - y, 20, block_colors[board[x][y]])    
+            if transparency == 255:
+                draw_block_mc(x, y, boxSize, board)  # draw the block on Minecraft
+
     left, top = leftTopPixelCoordOfBox(0, 0)
     pygame.draw.rect(tempSurf, BLACK, (left-1, top-1, boxSize * boardWidth + 1, boxSize * boardHeight + 1), 1)
-    # r, g, b = block_colors[board[x][y]]
-    mc.setBlock(x, 120 - y, 20, block_colors[board[x][y]])
     DISPLAYSURF.blit(tempSurf, (0, 0))
 
 
@@ -451,12 +451,13 @@ def drawLifeMeter(currentLife):
     # Define Minecraft coordinates
     board_mc_x = -4
     board_mc_y = 120
-    board_mc_z = 20
+    board_mc_z = 0
 
     for i in range(maxLife):
         if currentLife >= (maxLife - i):  # draw a solid red box
             pygame.draw.rect(DISPLAYSURF, RED, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize))
-            mc.setBlock(board_mc_x, board_mc_y - i, board_mc_z, block_colors, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize))  # Display red wool block in Minecraft
+           #draw_block_mc(board_mc_x, board_mc_y - i, board_mc_z, block_colors, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize))
+            draw_block_mc(board_mc_x, board_mc_y - i, board_mc_z, block_colors)  # Display red wool block in Minecraft
         pygame.draw.rect(DISPLAYSURF, WHITE, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize), 1) # draw white outline
 
 # Initialize Pygame and other necessary components here...
