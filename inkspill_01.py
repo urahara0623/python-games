@@ -28,8 +28,8 @@ SMALLBOARDSIZE  = 6 # size is in boxes
 MEDIUMBOARDSIZE = 17
 LARGEBOARDSIZE  = 30
 
-SMALLMAXLIFE  = 10 # number of turns
-MEDIUMMAXLIFE = 30
+SMALLMAXLIFE  = 16 # number of turns
+MEDIUMMAXLIFE = 32
 LARGEMAXLIFE  = 64
 
 FPS = 30
@@ -444,6 +444,7 @@ def drawPalettes():
 # Initialize Minecraft connection
 def drawLifeMeter(currentLife):
     lifeBoxSize = int((WINDOWHEIGHT - 40) / maxLife)
+    lifeBoxSize_mc = int(64 / maxLife)
 
     # Draw background color of life meter.
     pygame.draw.rect(DISPLAYSURF, bgColor, (20, 20, 20, 20 + (maxLife * lifeBoxSize)))
@@ -456,8 +457,8 @@ def drawLifeMeter(currentLife):
     for i in range(maxLife):
         if currentLife >= (maxLife - i):  # draw a solid red box
             pygame.draw.rect(DISPLAYSURF, RED, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize))
-           #draw_block_mc(board_mc_x, board_mc_y - i, board_mc_z, block_colors, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize))
-            draw_block_mc(board_mc_x, board_mc_y - i, board_mc_z, block_colors)  # Display red wool block in Minecraft
+           #draw_block_mc(board_mc_x, board_mc_y - i, board_mc_z, block_colors, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize_mc))
+            draw_block_mc(board_mc_x, board_mc_y - i, board_mc_z, block_colors)
         pygame.draw.rect(DISPLAYSURF, WHITE, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize), 1) # draw white outline
 
 # Initialize Pygame and other necessary components here...
