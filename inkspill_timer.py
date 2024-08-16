@@ -13,6 +13,7 @@ mc.setBlock(5, 70, 5, param.GOLD_BLOCK)
 DARK_GRAY = (40, 40, 40)
 GRAY = (80, 80, 80)
 RED = (255, 0, 0)
+YELLOW   = (255, 255,   0)
 WHITE = (250, 250, 250)
 
 pygame.init()
@@ -37,11 +38,7 @@ display7.init_row(X_ORG=6, Y_ORG=24, COL_INTV=6)
 
 display8 = LCD_font_mc(mc)
 display8.init_col(COLOR_ON=param.IRON_BLOCK, COLOR_OFF=param.AIR)
-display8.init_row(X_ORG=-26, Y_ORG=param.Y_SEA + 64, Z_ORG=5, COL_INTV=6)
-
-display9 = LCD_font_mc(mc)
-display9.init_col(COLOR_ON=param.SEA_LANTERN_BLOCK, COLOR_OFF=param.AIR)
-display9.init_row(X_ORG=-20, Y_ORG=param.Y_SEA + 55, Z_ORG=5, COL_INTV=6)
+display8.init_row(X_ORG=0, Y_ORG=param.Y_SEA + 80, Z_ORG=20, COL_INTV=6)
 
 start_time = datetime.now()
 
@@ -91,15 +88,6 @@ while running:
     display8.update_col(col=5, code=10)
     display8.update_col(col=6, code=seconds // 10)
     display8.update_col(col=7, code=seconds % 10)
-
-    display9.update_col(col=0, code=hours // 10)
-    display9.update_col(col=1, code=hours % 10)
-    display9.update_col(col=2, code=10)
-    display9.update_col(col=3, code=minutes // 10)
-    display9.update_col(col=4, code=minutes % 10)
-    display9.update_col(col=5, code=10)
-    display9.update_col(col=6, code=seconds // 10)
-    display9.update_col(col=7, code=seconds % 10)
 
     clock.tick(1)  # 毎秒更新
 
