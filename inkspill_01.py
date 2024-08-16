@@ -1,505 +1,95 @@
-# Ink Spill (a Flood It clone)
-# http://inventwithpython.com/pygame
-# By Al Sweigart al@inventwithpython.com
-# Released under a "Simplified BSD" license
-
-import random, sys, webbrowser, copy, pygame
-from pygame.locals import *
+from datetime import datetime, timedelta
+import pygame
+from seven_seg_pg import Seven_seg
+from lcd_font_pg import LCD_font
+from lcd_font_mc import LCD_font as LCD_font_mc
 from mcje.minecraft import Minecraft
 import param_MCJE as param
 
 mc = Minecraft.create(port=param.PORT_MC)
-mc.postToChat('kadai #1  the first golden block')
-block_colors = (param.RED, param.GREEN, param.BLUE, param.YELLOW, param.ORANGE, param.PURPLE)
-# block_colors[1] = param.RED
-# block_colors[2] = param.GREEN
-# block_colors[3] = param.BLUE
-# block_colors[4] = param.YELLOW
-# block_colors[5] = param.ORANGE
-# block_colors[6] = param.PURPLE
+mc.postToChat('経過時間の表示を開始します...')
+mc.setBlock(5, 70, 5, param.GOLD_BLOCK)
 
-# There are different box sizes, number of boxes, and
-# life depending on the "board size" setting selected.
-SMALLBOXSIZE  = 40 # size is in pixels
-MEDIUMBOXSIZE = 20
-LARGEBOXSIZE  = 10
-
-SMALLBOARDSIZE  = 6 # size is in boxes
-MEDIUMBOARDSIZE = 17
-LARGEBOARDSIZE  = 30
-
-SMALLMAXLIFE  = 16 # number of turns
-MEDIUMMAXLIFE = 32
-LARGEMAXLIFE  = 64
-
-FPS = 30
-WINDOWWIDTH = 640
-WINDOWHEIGHT = 480
-boxSize = MEDIUMBOXSIZE
-PALETTEGAPSIZE = 10
-PALETTESIZE = 45
-EASY = 0   # arbitrary but unique value
-MEDIUM = 1 # arbitrary but unique value
-HARD = 2   # arbitrary but unique value
-
-difficulty = MEDIUM # game starts in "medium" mode
-maxLife = MEDIUMMAXLIFE
-boardWidth = MEDIUMBOARDSIZE
-boardHeight = MEDIUMBOARDSIZE
-
-# タイルサイズの定義
-TILE_SIZE_L = 1
-TILE_SIZE_M = 2
-TILE_SIZE_S = 4
-
-# MCを定義
-MC_X0 = 0
-MC_Y0 = 120
-MC_Z0 = 0
-
-def draw_block_mc(x, y, boxSize, board):
-    boxSize = int(boxSize / 10)
-    for i in range(boxSize):
-        for j in range(boxSize):
-            mc.setBlock(MC_X0 + x * boxSize + i, MC_Y0 - y * boxSize - j, MC_Z0, block_colors[board[x][y]])
-
-
-#            R    G    B
-WHITE    = (255, 255, 255)
-DARKGRAY = ( 70,  70,  70)
-BLACK    = (  0,   0,   0)
-RED      = (255,   0,   0)
-GREEN    = (  0, 255,   0)
-BLUE     = (  0,   0, 255)
+DARK_GRAY = (40, 40, 40)
+GRAY = (80, 80, 80)
+RED = (255, 0, 0)
 YELLOW   = (255, 255,   0)
-ORANGE   = (255, 128,   0)
-PURPLE   = (255,   0, 255)
+WHITE = (250, 250, 250)
 
-# The first color in each scheme is the background color, the next six are the palette colors.
-COLORSCHEMES = (((150, 200, 255), RED, GREEN, BLUE, YELLOW, ORANGE, PURPLE),
-                ((0, 155, 104),  (97, 215, 164),  (228, 0, 69),  (0, 125, 50),   (204, 246, 0),   (148, 0, 45),    (241, 109, 149)),
-                ((195, 179, 0),  (255, 239, 115), (255, 226, 0), (147, 3, 167),  (24, 38, 176),   (166, 147, 0),   (197, 97, 211)),
-                ((85, 0, 0),     (155, 39, 102),  (0, 201, 13),  (255, 118, 0),  (206, 0, 113),   (0, 130, 9),     (255, 180, 115)),
-                ((191, 159, 64), (183, 182, 208), (4, 31, 183),  (167, 184, 45), (122, 128, 212), (37, 204, 7),    (88, 155, 213)),
-                ((200, 33, 205), (116, 252, 185), (68, 56, 56),  (52, 238, 83),  (23, 149, 195),  (222, 157, 227), (212, 86, 185)))
-for i in range(len(COLORSCHEMES)):
-    assert len(COLORSCHEMES[i]) == 7, 'Color scheme %s does not have exactly 7 colors.' % (i)
-bgColor = COLORSCHEMES[0][0]
-paletteColors =  COLORSCHEMES[0][1:]
+pygame.init()
 
-def main():
-    global FPSCLOCK, DISPLAYSURF, LOGOIMAGE, SPOTIMAGE, SETTINGSIMAGE, SETTINGSBUTTONIMAGE, RESETBUTTONIMAGE
+clock = pygame.time.Clock()
+screen = pygame.display.set_mode([480, 320])
+pygame.display.set_caption("経過時間表示")
+screen.fill(DARK_GRAY)
 
-    pygame.init()
-    FPSCLOCK = pygame.time.Clock()
-    DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
+# 7セグメントとLCDディスプレイを初期化
+display5 = Seven_seg(screen)
+display5.init_col(BLOCK_SIZE=9, BLOCK_INTV=9, COLOR_ON=(120, 200, 250), COLOR_OFF=GRAY)
+display5.init_row(X_ORG=8, Y_ORG=8, COL_INTV=6)
 
-    # Load images
-    LOGOIMAGE = pygame.image.load('inkspilllogo.png')
-    SPOTIMAGE = pygame.image.load('inkspillspot.png')
-    SETTINGSIMAGE = pygame.image.load('inkspillsettings.png')
-    SETTINGSBUTTONIMAGE = pygame.image.load('inkspillsettingsbutton.png')
-    RESETBUTTONIMAGE = pygame.image.load('inkspillresetbutton.png')
+display6 = LCD_font(screen)
+display6.init_col(BLOCK_SIZE=4, BLOCK_INTV=6, COLOR_ON=WHITE, COLOR_OFF=GRAY)
+display6.init_row(X_ORG=10, Y_ORG=21, COL_INTV=6)
 
-    pygame.display.set_caption('Ink Spill')
-    mousex = 0
-    mousey = 0
-    mainBoard = generateRandomBoard(boardWidth, boardHeight, difficulty)
-    life = maxLife
-    lastPaletteClicked = None
+display7 = LCD_font(screen)
+display7.init_col(BLOCK_SIZE=6, BLOCK_INTV=8, COLOR_ON=RED, COLOR_OFF=GRAY)
+display7.init_row(X_ORG=6, Y_ORG=24, COL_INTV=6)
 
-    while True: # main game loop
-        paletteClicked = None
-        resetGame = False
-        # パレットがクリックされたときの処理
-        #paletteClicked = get_palette_color(event.pos)  # クリックされたパレットの色を取得する関数
-        # アニメーションを実行
-        # floodAnimation(mainBoard, paletteClicked)
-        # Draw the screen.
-        DISPLAYSURF.fill(bgColor)
-        drawLogoAndButtons()
-        drawBoard(mainBoard)
-        drawLifeMeter(life)
-        drawPalettes()
+display8 = LCD_font_mc(mc)
+display8.init_col(COLOR_ON=param.IRON_BLOCK, COLOR_OFF=param.AIR)
+display8.init_row(X_ORG=0, Y_ORG=param.Y_SEA + 80, Z_ORG=20, COL_INTV=6)
 
-        checkForQuit()
-        for event in pygame.event.get(): # event handling loop
-            if event.type == MOUSEBUTTONUP:
-                mousex, mousey = event.pos
-                if pygame.Rect(WINDOWWIDTH - SETTINGSBUTTONIMAGE.get_width(),
-                               WINDOWHEIGHT - SETTINGSBUTTONIMAGE.get_height(),
-                               SETTINGSBUTTONIMAGE.get_width(),
-                               SETTINGSBUTTONIMAGE.get_height()).collidepoint(mousex, mousey):
-                    resetGame = showSettingsScreen() # clicked on Settings button
-                elif pygame.Rect(WINDOWWIDTH - RESETBUTTONIMAGE.get_width(),
-                                 WINDOWHEIGHT - SETTINGSBUTTONIMAGE.get_height() - RESETBUTTONIMAGE.get_height(),
-                                 RESETBUTTONIMAGE.get_width(),
-                                 RESETBUTTONIMAGE.get_height()).collidepoint(mousex, mousey):
-                    resetGame = True # clicked on Reset button
-                else:
-                    # check if a palette button was clicked
-                    paletteClicked = getColorOfPaletteAt(mousex, mousey)
-            elif event.type == KEYDOWN:
-                # support up to 9 palette keys
-                try:
-                    key = int(event.unicode)
-                except:
-                    key = None
+start_time = datetime.now()
 
-                if key != None and key > 0 and key <= len(paletteColors):
-                    paletteClicked = key - 1
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    if not running:
+        break
 
-        if paletteClicked != None and paletteClicked != lastPaletteClicked:
-            # a palette button was clicked that is different from the
-            # last palette button clicked (this check prevents the player
-            # from accidentally clicking the same palette twice)
-            lastPaletteClicked = paletteClicked
-            floodAnimation(mainBoard, paletteClicked)
-            life -= 1
+    elapsed_time = datetime.now() - start_time
+    elapsed_seconds = int(elapsed_time.total_seconds())
 
-            resetGame = False
-            if hasWon(mainBoard):
-                for i in range(4): # flash border 4 times
-                    flashBorderAnimation(WHITE, mainBoard)
-                resetGame = True
-                pygame.time.wait(2000) # pause so the player can bask in victory
-            elif life == 0:
-                # life is zero, so player has lost
-                drawLifeMeter(0)
-                pygame.display.update()
-                pygame.time.wait(400)
-                for i in range(4):
-                    flashBorderAnimation(BLACK, mainBoard)
-                resetGame = True
-                pygame.time.wait(2000) # pause so the player can suffer in their defeat
+    hours = elapsed_seconds // 3600
+    minutes = (elapsed_seconds % 3600) // 60
+    seconds = elapsed_seconds % 60
 
-        if resetGame:
-            # start a new game
-            mainBoard = generateRandomBoard(boardWidth, boardHeight, difficulty)
-            life = maxLife
-            lastPaletteClicked = None
+    time_display = hours * 10000 + minutes * 100 + seconds
+    display5.disp_num2(zfil=True, rjust=6, num=time_display, base=10)
 
-        pygame.display.update()
-        FPSCLOCK.tick(FPS)
+    display6.update_col(col=0, code=hours // 10)
+    display6.update_col(col=1, code=hours % 10)
+    display6.update_col(col=2, code=10)  # コロンのセパレータ
+    display6.update_col(col=3, code=minutes // 10)
+    display6.update_col(col=4, code=minutes % 10)
+    display6.update_col(col=5, code=10)  # コロンのセパレータ
+    display6.update_col(col=6, code=seconds // 10)
+    display6.update_col(col=7, code=seconds % 10)
 
+    display7.update_col(col=0, code=hours // 10)
+    display7.update_col(col=1, code=hours % 10)
+    display7.update_col(col=2, code=10)
+    display7.update_col(col=3, code=minutes // 10)
+    display7.update_col(col=4, code=minutes % 10)
+    display7.update_col(col=5, code=10)
+    display7.update_col(col=6, code=seconds // 10)
+    display7.update_col(col=7, code=seconds % 10)
 
-def checkForQuit():
-    # Terminates the program if there are any QUIT or escape key events.
-    for event in pygame.event.get(QUIT): # get all the QUIT events
-        pygame.quit() # terminate if any QUIT events are present
-        sys.exit()
-    for event in pygame.event.get(KEYUP): # get all the KEYUP events
-        if event.key == K_ESCAPE:
-            pygame.quit() # terminate if the KEYUP event was for the Esc key
-            sys.exit()
-        pygame.event.post(event) # put the other KEYUP event objects back
+    pygame.display.flip()
 
+    display8.update_col(col=0, code=hours // 10)
+    display8.update_col(col=1, code=hours % 10)
+    display8.update_col(col=2, code=10)
+    display8.update_col(col=3, code=minutes // 10)
+    display8.update_col(col=4, code=minutes % 10)
+    display8.update_col(col=5, code=10)
+    display8.update_col(col=6, code=seconds // 10)
+    display8.update_col(col=7, code=seconds % 10)
 
-def hasWon(board):
-    # if the entire board is the same color, player has won
-    for x in range(boardWidth):
-        for y in range(boardHeight):
-            if board[x][y] != board[0][0]:
-                return False # found a different color, player has not won
-    return True
+    clock.tick(1)  # 毎秒更新
 
+pygame.quit()
 
-def showSettingsScreen():
-    global difficulty, boxSize, boardWidth, boardHeight, maxLife, paletteColors, bgColor
-
-    # The pixel coordinates in this function were obtained by loading
-    # the inkspillsettings.png image into a graphics editor and reading
-    # the pixel coordinates from there. Handy trick.
-
-    origDifficulty = difficulty
-    origBoxSize = boxSize
-    screenNeedsRedraw = True
-
-    while True:
-        if screenNeedsRedraw:
-            DISPLAYSURF.fill(bgColor)
-            DISPLAYSURF.blit(SETTINGSIMAGE, (0,0))
-
-            # place the ink spot marker next to the selected difficulty
-            if difficulty == EASY:
-                DISPLAYSURF.blit(SPOTIMAGE, (30, 4))
-            if difficulty == MEDIUM:
-                DISPLAYSURF.blit(SPOTIMAGE, (8, 41))
-            if difficulty == HARD:
-                DISPLAYSURF.blit(SPOTIMAGE, (30, 76))
-
-            # place the ink spot marker next to the selected size
-            if boxSize == SMALLBOXSIZE:
-                DISPLAYSURF.blit(SPOTIMAGE, (22, 150))
-            if boxSize == MEDIUMBOXSIZE:
-                DISPLAYSURF.blit(SPOTIMAGE, (11, 185))
-            if boxSize == LARGEBOXSIZE:
-                DISPLAYSURF.blit(SPOTIMAGE, (24, 220))
-
-            for i in range(len(COLORSCHEMES)):
-                drawColorSchemeBoxes(500, i * 60 + 30, i)
-
-            pygame.display.update()
-
-        screenNeedsRedraw = False # by default, don't redraw the screen
-        for event in pygame.event.get(): # event handling loop
-            if event.type == QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == KEYUP:
-                if event.key == K_ESCAPE:
-                    # Esc key on settings screen goes back to game
-                    return not (origDifficulty == difficulty and origBoxSize == boxSize)
-            elif event.type == MOUSEBUTTONUP:
-                screenNeedsRedraw = True # screen should be redrawn
-                mousex, mousey = event.pos # syntactic sugar
-
-                # check for clicks on the difficulty buttons
-                if pygame.Rect(74, 16, 111, 30).collidepoint(mousex, mousey):
-                    difficulty = EASY
-                elif pygame.Rect(53, 50, 104, 29).collidepoint(mousex, mousey):
-                    difficulty = MEDIUM
-                elif pygame.Rect(72, 85, 65, 31).collidepoint(mousex, mousey):
-                    difficulty = HARD
-
-                # check for clicks on the size buttons
-                elif pygame.Rect(63, 156, 84, 31).collidepoint(mousex, mousey):
-                    # small board size setting:
-                    boxSize = SMALLBOXSIZE
-                    boardWidth = SMALLBOARDSIZE
-                    boardHeight = SMALLBOARDSIZE
-                    maxLife = SMALLMAXLIFE
-                elif pygame.Rect(52, 192, 106,32).collidepoint(mousex, mousey):
-                    # medium board size setting:
-                    boxSize = MEDIUMBOXSIZE
-                    boardWidth = MEDIUMBOARDSIZE
-                    boardHeight = MEDIUMBOARDSIZE
-                    maxLife = MEDIUMMAXLIFE
-                elif pygame.Rect(67, 228, 58, 37).collidepoint(mousex, mousey):
-                    # large board size setting:
-                    boxSize = LARGEBOXSIZE
-                    boardWidth = LARGEBOARDSIZE
-                    boardHeight = LARGEBOARDSIZE
-                    maxLife = LARGEMAXLIFE
-                elif pygame.Rect(14, 299, 371, 97).collidepoint(mousex, mousey):
-                    # clicked on the "learn programming" ad
-                    webbrowser.open('http://inventwithpython.com') # opens a web browser
-                elif pygame.Rect(178, 418, 215, 34).collidepoint(mousex, mousey):
-                    # clicked on the "back to game" button
-                    return not (origDifficulty == difficulty and origBoxSize == boxSize)
-
-                for i in range(len(COLORSCHEMES)):
-                    # clicked on a color scheme button
-                    if pygame.Rect(500, 30 + i * 60, MEDIUMBOXSIZE * 3, MEDIUMBOXSIZE * 2).collidepoint(mousex, mousey):
-                        bgColor = COLORSCHEMES[i][0]
-                        paletteColors  = COLORSCHEMES[i][1:]
-
-
-def drawColorSchemeBoxes(x, y, schemeNum):
-    # Draws the color scheme boxes that appear on the "Settings" screen.
-    for boxy in range(2):
-        for boxx in range(3):
-            pygame.draw.rect(DISPLAYSURF, COLORSCHEMES[schemeNum][3 * boxy + boxx + 1], (x + MEDIUMBOXSIZE * boxx, y + MEDIUMBOXSIZE * boxy, MEDIUMBOXSIZE, MEDIUMBOXSIZE))
-            if paletteColors == COLORSCHEMES[schemeNum][1:]:
-                # put the ink spot next to the selected color scheme
-                DISPLAYSURF.blit(SPOTIMAGE, (x - 50, y))
-
-
-def flashBorderAnimation(color, board, animationSpeed=30):
-    origSurf = DISPLAYSURF.copy()
-    flashSurf = pygame.Surface(DISPLAYSURF.get_size())
-    flashSurf = flashSurf.convert_alpha()
-    for start, end, step in ((0, 256, 1), (255, 0, -1)):
-        # the first iteration on the outer loop will set the inner loop
-        # to have transparency go from 0 to 255, the second iteration will
-        # have it go from 255 to 0. This is the "flash".
-        for transparency in range(start, end, animationSpeed * step):
-            DISPLAYSURF.blit(origSurf, (0, 0))
-            r, g, b = color
-            flashSurf.fill((r, g, b, transparency))
-            DISPLAYSURF.blit(flashSurf, (0, 0))
-            drawBoard(board) # draw board ON TOP OF the transparency layer
-            pygame.display.update()
-            FPSCLOCK.tick(FPS)
-    DISPLAYSURF.blit(origSurf, (0, 0)) # redraw the original surface
-
-
-def floodAnimation(board, paletteClicked, animationSpeed=25):
-    origBoard = copy.deepcopy(board)
-    floodFill(board, board[0][0], paletteClicked, 0, 0)
-
-    #board_for_count = copy.deepcopy(board)
-    #achievement = floodFill(board_for_count, paletteClicked, -1, 0, 0)
-    #print(achievement, achievement / (boardWidth * boardHeight) * 100, '%')
-    #sys.setrecursionlimit(1100)
-    
-    for transparency in range(0, 255, animationSpeed):
-        # The "new" board slowly become opaque over the original board.
-        drawBoard(origBoard)
-        drawBoard(board, transparency)
-        pygame.display.update()
-        FPSCLOCK.tick(FPS)
-
-
-def generateRandomBoard(width, height, difficulty=MEDIUM):
-    # Creates a board data structure with random colors for each box.
-    board = []
-    for x in range(width):
-        column = []
-        for y in range(height):
-            column.append(random.randint(0, len(paletteColors) - 1))
-        board.append(column)
-
-    # Make board easier by setting some boxes to same color as a neighbor.
-
-    # Determine how many boxes to change.
-    if difficulty == EASY:
-        if boxSize == SMALLBOXSIZE:
-            boxesToChange = 100
-        else:
-            boxesToChange = 1500
-    elif difficulty == MEDIUM:
-        if boxSize == SMALLBOXSIZE:
-            boxesToChange = 5
-        else:
-            boxesToChange = 200
-    else:
-        boxesToChange = 0
-
-    # Change neighbor's colors:
-    for i in range(boxesToChange):
-        # Randomly choose a box whose color to copy
-        x = random.randint(1, width-2)
-        y = random.randint(1, height-2)
-
-        # Randomly choose neighbors to change.
-        direction = random.randint(0, 3)
-        if direction == 0: # change left and up neighbor
-            board[x-1][y] == board[x][y]
-            board[x][y-1] == board[x][y]
-        elif direction == 1: # change right and down neighbor
-            board[x+1][y] == board[x][y]
-            board[x][y+1] == board[x][y]
-        elif direction == 2: # change right and up neighbor
-            board[x][y-1] == board[x][y]
-            board[x+1][y] == board[x][y]
-        else: # change left and down neighbor
-            board[x][y+1] == board[x][y]
-            board[x-1][y] == board[x][y]
-    return board
-
-
-def drawLogoAndButtons():
-    # draw the Ink Spill logo and Settings and Reset buttons.
-    DISPLAYSURF.blit(LOGOIMAGE, (WINDOWWIDTH - LOGOIMAGE.get_width(), 0))
-    DISPLAYSURF.blit(SETTINGSBUTTONIMAGE, (WINDOWWIDTH - SETTINGSBUTTONIMAGE.get_width(), WINDOWHEIGHT - SETTINGSBUTTONIMAGE.get_height()))
-    DISPLAYSURF.blit(RESETBUTTONIMAGE, (WINDOWWIDTH - RESETBUTTONIMAGE.get_width(), WINDOWHEIGHT - SETTINGSBUTTONIMAGE.get_height() - RESETBUTTONIMAGE.get_height()))
-
-
-# ボードを描く前に指定した空間を空気ブロックでクリアする関数
-def clear_area(board_size, tile_size):
-    width = board_size * tile_size
-    height = board_size * tile_size
-    depth = 1  # 1ブロックの厚さのみ
-    for x in range(MC_X0, MC_X0 + width):
-        for y in range(MC_Y0 - height, MC_Y0):
-            for z in range(MC_Z0, MC_Z0 + depth):
-                mc.setBlock(x, y, z, "air")
-
-def drawBoard(board, transparency=255):
-    # The colored squares are drawn to a temporary surface which is then
-    # drawn to the DISPLAYSURF surface. This is done so we can draw the
-    # squares with transparency on top of DISPLAYSURF as it currently is.
-    tempSurf = pygame.Surface(DISPLAYSURF.get_size())
-    tempSurf = tempSurf.convert_alpha()
-    tempSurf.fill((0, 0, 0, 0))
-    for x in range(boardWidth):
-        for y in range(boardHeight):
-            left, top = leftTopPixelCoordOfBox(x, y)
-            r, g, b = paletteColors[board[x][y]]
-            #if board[x][y] is not None:
-                #r, g, b = paletteColors[board[x][y]]
-            #else:
-                #r, g, b = (0, 0, 0)
-            pygame.draw.rect(tempSurf, (r, g, b, transparency), (left, top, boxSize, boxSize))
-            if transparency == 255:
-                draw_block_mc(x, y, boxSize, board)  # draw the block on Minecraft
-
-    left, top = leftTopPixelCoordOfBox(0, 0)
-    pygame.draw.rect(tempSurf, BLACK, (left-1, top-1, boxSize * boardWidth + 1, boxSize * boardHeight + 1), 1)
-    DISPLAYSURF.blit(tempSurf, (0, 0))
-
-
-
-def drawPalettes():
-    # Draws the six color palettes at the bottom of the screen.
-    numColors = len(paletteColors)
-    xmargin = int((WINDOWWIDTH - ((PALETTESIZE * numColors) + (PALETTEGAPSIZE * (numColors - 1)))) / 2)
-    for i in range(numColors):
-        left = xmargin + (i * PALETTESIZE) + (i * PALETTEGAPSIZE)
-        top = WINDOWHEIGHT - PALETTESIZE - 10
-        pygame.draw.rect(DISPLAYSURF, paletteColors[i], (left, top, PALETTESIZE, PALETTESIZE))
-        pygame.draw.rect(DISPLAYSURF, bgColor,   (left + 2, top + 2, PALETTESIZE - 4, PALETTESIZE - 4), 2)
-
-# Initialize Minecraft connection
-def drawLifeMeter(currentLife):
-    lifeBoxSize = int((WINDOWHEIGHT - 40) / maxLife)
-    lifeBoxSize_mc = int(64 / maxLife)
-
-    # Draw background color of life meter.
-    pygame.draw.rect(DISPLAYSURF, bgColor, (20, 20, 20, 20 + (maxLife * lifeBoxSize)))
-
-    # Define Minecraft coordinates
-    board_mc_x = -4
-    board_mc_y = 120
-    board_mc_z = 0
-
-    for i in range(maxLife):
-        if currentLife >= (maxLife - i):  # draw a solid red box
-            pygame.draw.rect(DISPLAYSURF, RED, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize))
-           #draw_block_mc(board_mc_x, board_mc_y - i, board_mc_z, block_colors, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize_mc))
-            draw_block_mc(board_mc_x, board_mc_y - i, board_mc_z, block_colors)
-        pygame.draw.rect(DISPLAYSURF, WHITE, (20, 20 + (i * lifeBoxSize), 20, lifeBoxSize), 1) # draw white outline
-
-# Initialize Pygame and other necessary components here...
-# ...
-# Call the drawLifeMeter function with the current life value
-
-def getColorOfPaletteAt(x, y):
-    # Returns the index of the color in paletteColors that the x and y parameters
-    # are over. Returns None if x and y are not over any palette.
-    numColors = len(paletteColors)
-    xmargin = int((WINDOWWIDTH - ((PALETTESIZE * numColors) + (PALETTEGAPSIZE * (numColors - 1)))) / 2)
-    top = WINDOWHEIGHT - PALETTESIZE - 10
-    for i in range(numColors):
-        # Find out if the mouse click is inside any of the palettes.
-        left = xmargin + (i * PALETTESIZE) + (i * PALETTEGAPSIZE)
-        r = pygame.Rect(left, top, PALETTESIZE, PALETTESIZE)
-        if r.collidepoint(x, y):
-            return i
-    return None # no palette exists at these x, y coordinates
-
-def floodFill(board, oldColor, newColor, x, y):
-    if x < 0 or x >= boardWidth or y < 0 or y >= boardHeight:
-        return
-
-    if oldColor == newColor or board[x][y] != oldColor:
-        return
-    board[x][y] = newColor  # change the color of the current box
-
-    # Make the recursive call for any neighboring boxes:
-    floodFill(board, oldColor, newColor, x - 1, y)  # on box to the left
-    floodFill(board, oldColor, newColor, x + 1, y)  # on box to the right
-    floodFill(board, oldColor, newColor, x, y - 1)  # on box to up
-    floodFill(board, oldColor, newColor, x, y + 1)  # on box to down
-    return
-
-def leftTopPixelCoordOfBox(boxx, boxy):
-    # Returns the x and y of the left-topmost pixel of the xth & yth box.
-    xmargin = int((WINDOWWIDTH - (boardWidth * boxSize)) / 2)
-    ymargin = int((WINDOWHEIGHT - (boardHeight * boxSize)) / 2)
-    return (boxx * boxSize + xmargin, boxy * boxSize + ymargin)
-
-
-if __name__ == '__main__':
-    main()
