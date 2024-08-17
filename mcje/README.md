@@ -2,7 +2,7 @@
 
 説明はドキュメントでしています
 
-####[https://docs.google.com/document/d/1Wmqvq9Y1iObhi_s2ioIEh-3NqZ7HxU4ppqjwYPJzxdc/edit]
+#### [Google document](https://docs.google.com/document/d/1Wmqvq9Y1iObhi_s2ioIEh-3NqZ7HxU4ppqjwYPJzxdc/edit) 
 
 
 
